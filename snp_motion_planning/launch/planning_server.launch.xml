@@ -18,15 +18,15 @@
   <!-- Profiles -->
   <arg name="velocity_scaling_factor" default="1.0"/>
   <arg name="acceleration_scaling_factor" default="1.0"/>
-  <arg name="max_translational_vel" default="0.050"/>
+  <arg name="max_translational_vel" default="0.150"/>
   <arg name="max_rotational_vel" default="1.571"/>
-  <arg name="max_translational_acc" default="0.100"/>
+  <arg name="max_translational_acc" default="0.3"/>
   <arg name="max_rotational_acc" default="3.14"/>
   <arg name="check_joint_accelerations" default="false"/>
   <arg name="min_contact_distance" default="0.0"/>
   <arg name="contact_check_lvs_distance" default="0.05"/>
   <arg name="ompl_max_planning_time" default="5.0"/>
-  <arg name="tcp_max_speed" default="0.25"/>
+  <arg name="tcp_max_speed" default="0.4"/>
   <arg name="cartesian_tolerance" default="[0.01, 0.01, 0.01, 0.05, 0.05, 6.28]"/>
   <arg name="cartesian_coefficient" default="[2.5, 2.5, 2.5, 2.5, 2.5, 0.0]"/>
 
