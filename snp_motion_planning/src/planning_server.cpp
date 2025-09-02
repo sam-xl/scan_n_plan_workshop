@@ -716,6 +716,7 @@ private:
       RCLCPP_INFO_STREAM(node_->get_logger(), "Received freespace motion planning request");
 
       tesseract_common::ManipulatorInfo manip_info;
+      manip_info.manipulator_ik_solver = "URInvKin";
       manip_info.manipulator = req->motion_group;
       manip_info.tcp_frame = req->tcp_frame;
       manip_info.working_frame = env_->getJointGroup(req->motion_group)->getBaseLinkName();
