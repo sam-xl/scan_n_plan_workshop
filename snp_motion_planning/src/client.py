@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 
-from snp_msgs.srv import GenerateMotionPlan  # Adjust to your package name
+from snp_msgs.srv import GenerateMotionPlan
 from snp_msgs.msg import ToolPath
 from geometry_msgs.msg import PoseArray, Pose
 from trajectory_msgs.msg import JointTrajectory
@@ -257,8 +257,6 @@ def create_inspection_toolpath():
         }
         ]
 
-
-
     poses_data = []
     # segment_15.reverse()
     poses_data.extend(segment_1)
@@ -292,43 +290,38 @@ def create_inspection_toolpath():
 
     return tool_path
 
-class MotionPlanClient(Node):
+class MotionClient(Node):
     def __init__(self):
-        super().__init__('motion_plan_client')
-        self.cli = self.create_client(GenerateMotionPlan, '/generate_motion_plan')
-
+        super().__init__('motion_client')
+        self.planner = self.create_client(GenerateMotionPlan, '/generate_motion_plan')
         self.controller = ActionClient(self, FollowJointTrajectory, '/scaled_joint_trajectory_controller/follow_joint_trajectory')
 
-        while not self.cli.wait_for_service(timeout_sec=1.0):
+    def request_plan(self):
+        """Request a motion plan from the motion planning service."""
+        req = GenerateMotionPlan.Request()
+        req.tool_paths = [create_inspection_toolpath()]
+        req.motion_group = 'manipulator'
+        req.tcp_frame = 'tcp'
+
+        while not self.planner.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Waiting for service /generate_motion_plan...')
-        
-        self.req = GenerateMotionPlan.Request()
+      
+        future = self.planner.call_async(req)
+        return future
 
-    def send_request(self):
-        # Example: fill in tool paths (empty array here; fill as needed)
-        self.req.tool_paths = [create_inspection_toolpath()]
-        
-        # Example: set motion group and TCP frame
-        self.req.motion_group = 'manipulator'
-        self.req.tcp_frame = 'tcp'
-
-        self.future = self.cli.call_async(self.req)
-        return self.future
-
-    def send_goal(self, trajectory):
+    def request_control(self, trajectory: JointTrajectory):
+        """Request control of the robot's by sending a Joint trajectory to the action server"""
         goal_msg = FollowJointTrajectory.Goal()
         goal_msg.trajectory = trajectory
 
         self.controller.wait_for_server()
-        self._send_goal_future = self.controller.send_goal_async(goal_msg)
-        # self._send_goal_future.add_done_callback(self.goal_response_callback)
-        rclpy.spin_until_future_complete(self, self._send_goal_future)
+        send_goal_future = self.controller.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self, send_goal_future)
 
-        self.ctrl_result_future = self.goal_response_callback(self._send_goal_future)
-        rclpy.spin_until_future_complete(self, self.ctrl_result_future)
-        # return self.ctrl_result_future
+        ctrl_result_future = self.request_control_result(send_goal_future)
+        return ctrl_result_future
 
-    def goal_response_callback(self, future):
+    def request_control_result(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().info(f"Goal rejected :(")
@@ -351,9 +344,9 @@ class MotionPlanClient(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    client = MotionPlanClient()
+    client = MotionClient()
     try:
-        plan_future  = client.send_request()
+        plan_future  = client.request_plan()
         rclpy.spin_until_future_complete(client, plan_future)
 
         response = plan_future.result()
@@ -375,9 +368,14 @@ def main(args=None):
     for pt in response.departure.points:
      pt.effort=[]
 
-    client.send_goal(response.approach)
-    client.send_goal(response.process)
-    client.send_goal(response.departure)
+    # Synchronus control
+    approach_future = client.request_control(response.approach)
+    rclpy.spin_until_future_complete(client, approach_future)
+    process_future = client.request_control(response.process)
+    rclpy.spin_until_future_complete(client, process_future)
+    departure_future = client.request_control(response.departure)
+    rclpy.spin_until_future_complete(client, departure_future)
+
     client.destroy_node()
     rclpy.shutdown()
 
