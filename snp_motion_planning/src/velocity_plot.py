@@ -11,12 +11,13 @@ from collections import deque
 import time
 import math
 
+
 class TFVelocityPlotter(Node):
     def __init__(self):
-        super().__init__('tf_velocity_plotter')
+        super().__init__("tf_velocity_plotter")
 
-        self.source_frame = 'ur10e_base_link'
-        self.target_frame = 'tcp'
+        self.source_frame = "ur10e_base_link"
+        self.target_frame = "tcp"
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -24,7 +25,7 @@ class TFVelocityPlotter(Node):
         # Position-time window for smoothing
         self.window_size = 10  # number of samples to average over
         self.position_window = deque(maxlen=self.window_size)
-        
+
         # Data for plotting
         self.times = deque(maxlen=700)
         self.velocities = deque(maxlen=700)
@@ -33,22 +34,22 @@ class TFVelocityPlotter(Node):
         # Matplotlib setup
         plt.ion()
         self.fig, self.ax = plt.subplots()
-        self.line, = self.ax.plot([], [], label='Smoothed Linear Speed')
-        self.ax.set_xlabel('Time (s)')
-        self.ax.set_ylabel('Speed (m/s)')
-        self.ax.set_title(f'Smoothed Speed of {self.target_frame} w.r.t. {self.source_frame}')
+        (self.line,) = self.ax.plot([], [], label="Smoothed Linear Speed")
+        self.ax.set_xlabel("Time (s)")
+        self.ax.set_ylabel("Speed (m/s)")
+        self.ax.set_title(
+            f"Smoothed Speed of {self.target_frame} w.r.t. {self.source_frame}"
+        )
         self.ax.legend()
 
-        self.timer = self.create_timer(0.05, self.timer_callback)     # 20 Hz TF lookup
-        self.plot_timer = self.create_timer(0.1, self.update_plot)    # 10 Hz plot update
+        self.timer = self.create_timer(0.05, self.timer_callback)  # 20 Hz TF lookup
+        self.plot_timer = self.create_timer(0.1, self.update_plot)  # 10 Hz plot update
 
     def timer_callback(self):
         try:
             now = rclpy.time.Time()
             trans: TransformStamped = self.tf_buffer.lookup_transform(
-                self.source_frame,
-                self.target_frame,
-                now
+                self.source_frame, self.target_frame, now
             )
 
             pos = trans.transform.translation
@@ -84,6 +85,7 @@ class TFVelocityPlotter(Node):
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = TFVelocityPlotter()
@@ -97,5 +99,6 @@ def main(args=None):
         plt.ioff()
         plt.show()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
