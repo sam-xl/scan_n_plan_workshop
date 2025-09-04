@@ -12,7 +12,8 @@ from rclpy.action import ActionClient
 from control_msgs.action import FollowJointTrajectory
 
 
-def create_dummy_tool_path():
+def create_dummy_tool_path() -> ToolPath:
+    """Create a dummy ToolPath message for testing purposes."""
     pose1 = Pose()
 
     pose1.position.x = 0.1
@@ -37,7 +38,8 @@ def create_dummy_tool_path():
     return tool_path
 
 
-def create_toolpath_from_yaml(file_path):
+def create_toolpath_from_yaml(file_path) -> ToolPath:
+    """Create a ToolPath message from a YAML file."""
     with open(file_path, "r") as file:
         data = yaml.safe_load(file)
 
@@ -67,6 +69,8 @@ def create_toolpath_from_yaml(file_path):
 
 
 class MotionClient(Node):
+    """A ROS2 node for motion planning and robot control."""
+
     def __init__(self):
         super().__init__("motion_client")
         self.planner = self.create_client(GenerateMotionPlan, "/generate_motion_plan")
@@ -106,6 +110,8 @@ class MotionClient(Node):
         return ctrl_result_future
 
     def request_control_result(self, future):
+        """Wait for the result from the action server."""
+
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().info("Goal rejected :(")
@@ -113,43 +119,45 @@ class MotionClient(Node):
 
         self.get_logger().info("Goal accepted :)")
 
-        self.ctrl_result_future = goal_handle.get_result_async()
-        self.ctrl_result_future.add_done_callback(self.get_result_callback)
-        return self.ctrl_result_future
+        ctrl_result_future = goal_handle.get_result_async()
+        ctrl_result_future.add_done_callback(self.get_result_callback)
+        return ctrl_result_future
 
     def get_result_callback(self, future):
         result = future.result().result
-        self.get_logger().info("Result: {0}".format(result.error_code))
+        self.get_logger().info(f"Result: {result.error_code}")
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
-        self.get_logger().info(
-            "Received feedback: {0}".format(feedback.partial_sequence)
-        )
+        self.get_logger().info(f"Received feedback: {feedback.partial_sequence}")
 
 
 def main(args=None):
     rclpy.init(args=args)
 
     client = MotionClient()
-    try:
-        plan_future = client.request_plan()
-        rclpy.spin_until_future_complete(client, plan_future)
+    client.get_logger().info("[plan] Requesting motion plan...")
+    plan_future = client.request_plan()
+    rclpy.spin_until_future_complete(client, plan_future)
 
-        response = plan_future.result()
-        if response.success:
-            client.get_logger().info("Received motion plan successfully!")
-            # Example: print number of points in each trajectory
-            client.get_logger().info(
-                f"Approach: {len(response.approach.points)} points"
-            )
-            client.get_logger().info(f"Process: {len(response.process.points)} points")
-            # print(response.approach.points)
-            client.get_logger().info(
-                f"Departure: {len(response.departure.points)} points"
-            )
-    except Exception as e:
-        client.get_logger().error(f"Service call failed: {e}")
+    if plan_future.exception():
+        client.get_logger().error(f"[plan] Request failed: {plan_future.exception()}")
+        client.destroy_node()
+        rclpy.shutdown()
+        return
+
+    response = plan_future.result()
+
+    if not response or not getattr(response, "success", False):
+        client.get_logger().error(f"[plan] Request failed: {plan_future.exception()}")
+        client.destroy_node()
+        rclpy.shutdown()
+        return
+
+    client.get_logger().info("[plan] Received motion plan successfully!")
+    client.get_logger().info(f"[plan] Approach: {len(response.approach.points)} points")
+    client.get_logger().info(f"[plan] Process: {len(response.process.points)} points")
+    client.get_logger().info(f"[plan] Departure: {len(response.departure.points)} points")
 
     # remove effort values because scaled_joint_trajectory_controller does not support it.
     for pt in response.approach.points:
@@ -159,6 +167,8 @@ def main(args=None):
     for pt in response.departure.points:
         pt.effort = []
 
+    client.get_logger().info("\n[exec] Starting Execution...")
+
     # Synchronus control
     approach_future = client.request_control(response.approach)
     rclpy.spin_until_future_complete(client, approach_future)
@@ -167,6 +177,7 @@ def main(args=None):
     departure_future = client.request_control(response.departure)
     rclpy.spin_until_future_complete(client, departure_future)
 
+    client.get_logger().info("[exec] Execution complete. Exiting.")
     client.destroy_node()
     rclpy.shutdown()
 
