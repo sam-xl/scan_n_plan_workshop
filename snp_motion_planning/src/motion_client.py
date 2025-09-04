@@ -73,6 +73,14 @@ class MotionClient(Node):
 
     def __init__(self):
         super().__init__("motion_client")
+        toolpath_default = os.path.join(
+                get_package_share_directory("snp_motion_planning"),
+                "config",
+                "toolpath.yaml",
+            )
+        self.declare_parameter("toolpath_file", toolpath_default)
+        self.toolpath_file = self.get_parameter("toolpath_file").get_parameter_value().string_value
+
         self.planner = self.create_client(GenerateMotionPlan, "/generate_motion_plan")
         self.controller = ActionClient(
             self,
@@ -80,13 +88,12 @@ class MotionClient(Node):
             "/scaled_joint_trajectory_controller/follow_joint_trajectory",
         )
 
+
     def request_plan(self):
         """Request a motion plan from the motion planning service."""
         req = GenerateMotionPlan.Request()
-        inspection_toolpath = create_toolpath_from_yaml(
-            "/workspace/src/scan_n_plan_workshop/snp_motion_planning/config/toolpath.yaml"
-        )
-        # print(inspection_toolpath)
+        inspection_toolpath = create_toolpath_from_yaml(self.toolpath_file)
+
         req.tool_paths = [inspection_toolpath]
         req.motion_group = "manipulator"
         req.tcp_frame = "tcp"
