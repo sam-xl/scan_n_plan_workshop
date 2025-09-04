@@ -17,6 +17,7 @@ set(ROS2_DEPS
     tf2_eigen)
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 foreach(dep ${ROS2_DEPS})
   find_package(${dep} REQUIRED)
 endforeach()
