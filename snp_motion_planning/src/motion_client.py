@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-import yaml
+import os
 
-from snp_msgs.srv import GenerateMotionPlan
-from snp_msgs.msg import ToolPath
-from geometry_msgs.msg import PoseArray, Pose
-from trajectory_msgs.msg import JointTrajectory
-from rclpy.action import ActionClient
+import rclpy
+import yaml
+from ament_index_python.packages import get_package_share_directory
 from control_msgs.action import FollowJointTrajectory
+from geometry_msgs.msg import Pose, PoseArray
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from trajectory_msgs.msg import JointTrajectory
+
+from snp_msgs.msg import ToolPath
+from snp_msgs.srv import GenerateMotionPlan
 
 
 def create_dummy_tool_path() -> ToolPath:
@@ -132,7 +135,7 @@ class MotionClient(Node):
 
     def get_result_callback(self, future):
         result = future.result().result
-        self.get_logger().info(f"Result: {result.error_code}")
+        self.get_logger().info(f"Result: {result.error_string}")
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
@@ -164,7 +167,9 @@ def main(args=None):
     client.get_logger().info("[plan] Received motion plan successfully!")
     client.get_logger().info(f"[plan] Approach: {len(response.approach.points)} points")
     client.get_logger().info(f"[plan] Process: {len(response.process.points)} points")
-    client.get_logger().info(f"[plan] Departure: {len(response.departure.points)} points")
+    client.get_logger().info(
+        f"[plan] Departure: {len(response.departure.points)} points"
+    )
 
     # remove effort values because scaled_joint_trajectory_controller does not support it.
     for pt in response.approach.points:
@@ -174,7 +179,7 @@ def main(args=None):
     for pt in response.departure.points:
         pt.effort = []
 
-    client.get_logger().info("\n[exec] Starting Execution...")
+    client.get_logger().info("[exec] Starting Execution...")
 
     # Synchronus control
     approach_future = client.request_control(response.approach)

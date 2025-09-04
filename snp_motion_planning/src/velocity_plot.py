@@ -1,15 +1,15 @@
 #!/usr/bin/python3
 
-import rclpy
-from rclpy.node import Node
-import tf2_ros
-from geometry_msgs.msg import TransformStamped
-from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
+import math
+import time
+from collections import deque
 
 import matplotlib.pyplot as plt
-from collections import deque
-import time
-import math
+import rclpy
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
+from rclpy.node import Node
+from tf2_ros import ConnectivityException, ExtrapolationException, LookupException
 
 
 class TFVelocityPlotter(Node):
