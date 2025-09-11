@@ -18,9 +18,9 @@
   <!-- Profiles -->
   <arg name="velocity_scaling_factor" default="1.0"/>
   <arg name="acceleration_scaling_factor" default="1.0"/>
-  <arg name="max_translational_vel" default="0.150"/>
+  <arg name="max_translational_vel" default="0.10"/>
   <arg name="max_rotational_vel" default="1.571"/>
-  <arg name="max_translational_acc" default="0.3"/>
+  <arg name="max_translational_acc" default="0.2"/>
   <arg name="max_rotational_acc" default="3.14"/>
   <arg name="check_joint_accelerations" default="false"/>
   <arg name="min_contact_distance" default="0.0"/>
