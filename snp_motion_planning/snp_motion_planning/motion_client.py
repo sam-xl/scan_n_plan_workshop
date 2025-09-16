@@ -83,6 +83,9 @@ class MotionClient(Node):
             )
         self.declare_parameter("toolpath_file", toolpath_default)
         self.toolpath_file = self.get_parameter("toolpath_file").get_parameter_value().string_value
+        if not os.path.exists(self.toolpath_file):
+            raise FileNotFoundError(f"Toolpath file not found: {self.toolpath_file}")
+
         self.motion_group = self.get_parameter("motion_group").get_parameter_value().string_value
         self.tcp_frame = self.get_parameter("tcp_frame").get_parameter_value().string_value
 
@@ -98,7 +101,6 @@ class MotionClient(Node):
         """Request a motion plan from the motion planning service."""
         req = GenerateMotionPlan.Request()
         inspection_toolpath = create_toolpath_from_yaml(self.toolpath_file)
-
         req.tool_paths = [inspection_toolpath]
         req.motion_group = self.motion_group
         req.tcp_frame = self.tcp_frame
