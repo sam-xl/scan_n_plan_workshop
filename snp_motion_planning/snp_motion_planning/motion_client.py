@@ -41,7 +41,7 @@ def create_dummy_tool_path() -> ToolPath:
     return tool_path
 
 
-def create_toolpath_from_yaml(file_path) -> ToolPath:
+def create_toolpath_from_yaml(file_path: str) -> ToolPath:
     """Create a ToolPath message from a YAML file."""
     with open(file_path, "r") as file:
         data = yaml.safe_load(file)
@@ -74,7 +74,7 @@ def create_toolpath_from_yaml(file_path) -> ToolPath:
 class MotionClient(Node):
     """A ROS2 node for motion planning and robot control."""
 
-    def __init__(self):
+    def __init__(self): -> None
         super().__init__("motion_client")
         toolpath_default = os.path.join(
                 get_package_share_directory("snp_motion_planning"),
@@ -83,6 +83,8 @@ class MotionClient(Node):
             )
         self.declare_parameter("toolpath_file", toolpath_default)
         self.toolpath_file = self.get_parameter("toolpath_file").get_parameter_value().string_value
+        self.motion_group = self.get_parameter("motion_group").get_parameter_value().string_value
+        self.tcp_frame = self.get_parameter("tcp_frame").get_parameter_value().string_value
 
         self.planner = self.create_client(GenerateMotionPlan, "/generate_motion_plan")
         self.controller = ActionClient(
@@ -98,8 +100,8 @@ class MotionClient(Node):
         inspection_toolpath = create_toolpath_from_yaml(self.toolpath_file)
 
         req.tool_paths = [inspection_toolpath]
-        req.motion_group = "manipulator"
-        req.tcp_frame = "tcp"
+        req.motion_group = self.motion_group
+        req.tcp_frame = self.tcp_frame
 
         while not self.planner.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Waiting for service /generate_motion_plan...")
@@ -107,7 +109,7 @@ class MotionClient(Node):
         future = self.planner.call_async(req)
         return future
 
-    def request_control(self, trajectory: JointTrajectory):
+    def request_control(self, trajectory: JointTrajectory): -> rclpy.Future:
         """Request control of the robot's by sending a Joint trajectory to the action server"""
         goal_msg = FollowJointTrajectory.Goal()
         goal_msg.trajectory = trajectory
@@ -119,7 +121,7 @@ class MotionClient(Node):
         ctrl_result_future = self.request_control_result(send_goal_future)
         return ctrl_result_future
 
-    def request_control_result(self, future):
+    def request_control_result(self, future: rclpy.Future): -> rclpy.Future:
         """Wait for the result from the action server."""
 
         goal_handle = future.result()
@@ -133,14 +135,9 @@ class MotionClient(Node):
         ctrl_result_future.add_done_callback(self.get_result_callback)
         return ctrl_result_future
 
-    def get_result_callback(self, future):
+    def get_result_callback(self, future: rclpy.Future): -> None
         result = future.result().result
         self.get_logger().info(f"Result: {result.error_string}")
-
-    def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-        self.get_logger().info(f"Received feedback: {feedback.partial_sequence}")
-
 
 def main(args=None):
     rclpy.init(args=args)
