@@ -1,5 +1,5 @@
-#include "tcp_speed_limiter_profile.h"
-#include "tcp_speed_limiter.hpp"
+#include "snp_motion_planning/plugins/tasks/tcp_speed_limiter_profile.h"
+#include "snp_motion_planning/plugins/tasks/tcp_speed_limiter.hpp"
 
 #include <tesseract_task_composer/core/task_composer_plugin_factory_utils.h>
 

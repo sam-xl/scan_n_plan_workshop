@@ -1,4 +1,4 @@
-#include "kinematic_limits_check_profile.h"
+#include "snp_motion_planning/plugins/tasks/kinematic_limits_check_profile.h"
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <typeindex>
