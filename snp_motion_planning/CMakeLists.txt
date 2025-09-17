@@ -9,6 +9,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+include_directories(
+ include
+)
+
 set(ROS2_DEPS
     rclcpp
     snp_msgs
@@ -69,25 +73,30 @@ target_link_libraries(
   tesseract::tesseract_kinematics_kdl
   yaml-cpp)
 
-# Plugin Library
-add_library(${PROJECT_NAME}_plugins SHARED src/plugins/kinematics/motoman_hc10_ikfast_plugin.cpp)
-target_link_libraries(${PROJECT_NAME}_plugins PUBLIC ${LAPACK_LIBRARIES} tesseract::tesseract_common
-                                                     tesseract::tesseract_kinematics_ikfast)
-target_include_directories(${PROJECT_NAME}_plugins SYSTEM PUBLIC ${LAPACK_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
-
 # Install the executable(s)
 install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
 
-# Install the library(ies)
-install(TARGETS ${PROJECT_NAME}_plugins ${PROJECT_NAME}_tasks EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
+install(DIRECTORY include/${PROJECT_NAME} DESTINATION include)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_include_directories(include)
 ament_export_dependencies(${ROS2_DEPS})
-ament_export_targets(${PROJECT_NAME}-targets HAS_LIBRARY_TARGET)
-ament_package()
+ament_export_targets(${PROJECT_NAME}_tasks HAS_LIBRARY_TARGET)
 
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME}/)
+
+install(
+  TARGETS ${PROJECT_NAME}_tasks
+  EXPORT ${PROJECT_NAME}_tasks
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+
+)
+ament_package()
