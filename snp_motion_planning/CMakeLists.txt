@@ -76,6 +76,31 @@ target_link_libraries(
 # Install the executable(s)
 install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
 
+# NDT Planning server
+add_executable(ndt_motion_planning_node src/ndt_planning_server.cpp)
+ament_target_dependencies(ndt_motion_planning_node ${ROS2_DEPS})
+target_link_libraries(
+  ndt_motion_planning_node
+  ${PROJECT_NAME}_tasks
+  tesseract::tesseract_common
+  tesseract::tesseract_collision_vhacd_convex_decomposition
+  tesseract::tesseract_command_language
+  tesseract::tesseract_task_composer
+  tesseract::tesseract_task_composer_planning_nodes
+  tesseract::tesseract_motion_planners_core
+  tesseract::tesseract_motion_planners_simple
+  tesseract::tesseract_motion_planners_ompl
+  tesseract::tesseract_motion_planners_trajopt
+  tesseract::tesseract_motion_planners_descartes
+  tesseract::tesseract_time_parameterization_isp
+  tesseract::tesseract_kinematics_kdl
+  yaml-cpp)
+
+# Install the executable(s)
+install(TARGETS ndt_motion_planning_node DESTINATION lib/${PROJECT_NAME})
+
+
+
 install(DIRECTORY include/${PROJECT_NAME} DESTINATION include)
 
 
