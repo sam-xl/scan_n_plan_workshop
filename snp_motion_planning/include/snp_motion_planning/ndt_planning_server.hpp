@@ -32,6 +32,7 @@ private:
 
     // Define the current state
     tesseract_planning::StateWaypoint current_state(joint_names, env_->getCurrentJointValues(joint_names));
+    program.push_back(tesseract_planning::MoveInstruction(current_state, tesseract_planning::MoveInstructionType::LINEAR, PROFILE, info));
 
     // Add the process raster motions
     for (std::size_t rs = 0; rs < raster_strips.size(); ++rs)
@@ -64,6 +65,8 @@ private:
         program.push_back(transition);
       }
     }
+
+    program.print();
 
     return program;
   }
