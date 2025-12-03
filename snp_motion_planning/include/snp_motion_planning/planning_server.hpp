@@ -312,144 +312,7 @@ public:
     RCLCPP_INFO(node_->get_logger(), "Started SNP motion planning server");
   }
 
-private:
-  tesseract_planning::CompositeInstruction createProgram(const tesseract_common::ManipulatorInfo& info,
-                                                         const tesseract_common::Toolpath& raster_strips)
-  {
-    std::vector<std::string> joint_names = env_->getJointGroup(info.manipulator)->getJointNames();
-
-    tesseract_planning::CompositeInstruction program(PROFILE, info);
-
-    // Define the current state
-    tesseract_planning::StateWaypoint current_state(joint_names, env_->getCurrentJointValues(joint_names));
-
-    // Add a freespace move from the current state to the first waypoint
-    {
-      tesseract_planning::CompositeInstruction from_start(PROFILE);
-      from_start.setDescription("approach");
-
-      // Define a move to the start waypoint
-      from_start.push_back(tesseract_planning::MoveInstruction(
-          current_state, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
-
-      // Define the target first waypoint
-      tesseract_planning::CartesianWaypoint wp1 = raster_strips.at(0).at(0);
-      from_start.push_back(
-          tesseract_planning::MoveInstruction(wp1, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
-
-      // Add the composite to the program
-      program.push_back(from_start);
-    }
-
-    // Add the process raster motions
-    for (std::size_t rs = 0; rs < raster_strips.size(); ++rs)
-    {
-      // Add raster
-      tesseract_planning::CompositeInstruction raster_segment(PROFILE);
-      raster_segment.setDescription("Raster Index " + std::to_string(rs));
-
-      for (std::size_t i = 1; i < raster_strips[rs].size(); ++i)
-      {
-        tesseract_planning::CartesianWaypoint wp = raster_strips[rs][i];
-        raster_segment.push_back(
-            tesseract_planning::MoveInstruction(wp, tesseract_planning::MoveInstructionType::LINEAR, PROFILE, info));
-      }
-      program.push_back(raster_segment);
-
-      // Add transition
-      if (rs < raster_strips.size() - 1)
-      {
-        tesseract_planning::CartesianWaypoint twp = raster_strips[rs + 1].front();
-
-        tesseract_planning::MoveInstruction transition_instruction1(
-            twp, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info);
-        transition_instruction1.setDescription("Transition #" + std::to_string(rs + 1));
-
-        tesseract_planning::CompositeInstruction transition(PROFILE);
-        transition.setDescription("Transition #" + std::to_string(rs + 1));
-        transition.push_back(transition_instruction1);
-
-        program.push_back(transition);
-      }
-    }
-
-    // Add a move back to the current state
-    {
-      tesseract_planning::CompositeInstruction to_end(PROFILE);
-      to_end.setDescription("to_end");
-      to_end.push_back(tesseract_planning::MoveInstruction(
-          current_state, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
-      program.push_back(to_end);
-    }
-
-    return program;
-  }
-
-  void removeScanLink()
-  {
-    if (env_->getSceneGraph()->getLink(SCAN_LINK_NAME))
-      env_->applyCommand(std::make_shared<tesseract_environment::RemoveLinkCommand>(SCAN_LINK_NAME));
-  }
-
-  void addScanLink(const std::string& mesh_filename, const std::string& mesh_frame)
-  {
-    // Add the scan as a collision object to the environment
-    {
-      auto collision_object_type = get<std::string>(node_, COLLISION_OBJECT_TYPE_PARAM);
-      std::vector<tesseract_geometry::Geometry::Ptr> collision_objects;
-      if (collision_object_type == "convex_mesh")
-        collision_objects = scanMeshToConvexMesh(mesh_filename);
-      else if (collision_object_type == "mesh")
-        collision_objects = scanMeshToMesh(mesh_filename);
-      else if (collision_object_type == "octree")
-      {
-        double octree_resolution = get<double>(node_, OCTREE_RESOLUTION_PARAM);
-        if (octree_resolution < std::numeric_limits<double>::epsilon())
-          throw std::runtime_error("Octree resolution must be > 0.0");
-        collision_objects = { scanMeshToOctree(mesh_filename, octree_resolution) };
-      }
-      else if (collision_object_type == "convex_decomposition")
-      {
-        auto max_convex_hulls = static_cast<uint32_t>(get<int>(node_, MAX_CONVEX_HULLS));
-        collision_objects = scanMeshToConvexDecomposition(mesh_filename, max_convex_hulls);
-      }
-      else
-      {
-        std::stringstream ss;
-        ss << "Invalid collision object type (" << collision_object_type
-           << ") for adding scan mesh to planning environment. Supported types are 'convex_mesh', 'mesh', and "
-              "'octree'";
-        throw std::runtime_error(ss.str());
-      }
-
-      tesseract_environment::Commands env_cmds = createScanAdditionCommands(
-          collision_objects, mesh_frame, get<std::vector<std::string>>(node_, SCAN_DISABLED_CONTACT_LINKS));
-
-      env_->applyCommands(env_cmds);
-    }
-  }
-
-  void removeScanLinkCallback(const std_srvs::srv::Empty::Request::SharedPtr, std_srvs::srv::Empty::Response::SharedPtr)
-  {
-    removeScanLink();
-  }
-
-  void addScanLinkCallback(const snp_msgs::srv::AddScanLink::Request::SharedPtr req,
-                           snp_msgs::srv::AddScanLink::Response::SharedPtr res)
-  {
-    try
-    {
-      addScanLink(req->mesh_filename, req->mesh_frame);
-      res->success = true;
-    }
-    catch (const std::exception& ex)
-    {
-      res->message = ex.what();
-      res->success = false;
-    }
-  }
-
-  tesseract_planning::ProfileDictionary::Ptr createProfileDictionary()
+    tesseract_planning::ProfileDictionary::Ptr createProfileDictionary()
   {
     tesseract_planning::ProfileDictionary::Ptr profile_dict = std::make_shared<tesseract_planning::ProfileDictionary>();
 
@@ -635,7 +498,147 @@ private:
     return program_results;
   }
 
-  void processMotionPlanCallback(const snp_msgs::srv::GenerateMotionPlan::Request::SharedPtr req,
+  tesseract_environment::Environment::Ptr env_;
+
+private:
+  tesseract_planning::CompositeInstruction createProgram(const tesseract_common::ManipulatorInfo& info,
+                                                         const tesseract_common::Toolpath& raster_strips)
+  {
+    std::vector<std::string> joint_names = env_->getJointGroup(info.manipulator)->getJointNames();
+
+    tesseract_planning::CompositeInstruction program(PROFILE, info);
+
+    // Define the current state
+    tesseract_planning::StateWaypoint current_state(joint_names, env_->getCurrentJointValues(joint_names));
+
+    // Add a freespace move from the current state to the first waypoint
+    {
+      tesseract_planning::CompositeInstruction from_start(PROFILE);
+      from_start.setDescription("approach");
+
+      // Define a move to the start waypoint
+      from_start.push_back(tesseract_planning::MoveInstruction(
+          current_state, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
+
+      // Define the target first waypoint
+      tesseract_planning::CartesianWaypoint wp1 = raster_strips.at(0).at(0);
+      from_start.push_back(
+          tesseract_planning::MoveInstruction(wp1, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
+
+      // Add the composite to the program
+      program.push_back(from_start);
+    }
+
+    // Add the process raster motions
+    for (std::size_t rs = 0; rs < raster_strips.size(); ++rs)
+    {
+      // Add raster
+      tesseract_planning::CompositeInstruction raster_segment(PROFILE);
+      raster_segment.setDescription("Raster Index " + std::to_string(rs));
+
+      for (std::size_t i = 1; i < raster_strips[rs].size(); ++i)
+      {
+        tesseract_planning::CartesianWaypoint wp = raster_strips[rs][i];
+        raster_segment.push_back(
+            tesseract_planning::MoveInstruction(wp, tesseract_planning::MoveInstructionType::LINEAR, PROFILE, info));
+      }
+      program.push_back(raster_segment);
+
+      // Add transition
+      if (rs < raster_strips.size() - 1)
+      {
+        tesseract_planning::CartesianWaypoint twp = raster_strips[rs + 1].front();
+
+        tesseract_planning::MoveInstruction transition_instruction1(
+            twp, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info);
+        transition_instruction1.setDescription("Transition #" + std::to_string(rs + 1));
+
+        tesseract_planning::CompositeInstruction transition(PROFILE);
+        transition.setDescription("Transition #" + std::to_string(rs + 1));
+        transition.push_back(transition_instruction1);
+
+        program.push_back(transition);
+      }
+    }
+
+    // Add a move back to the current state
+    {
+      tesseract_planning::CompositeInstruction to_end(PROFILE);
+      to_end.setDescription("to_end");
+      to_end.push_back(tesseract_planning::MoveInstruction(
+          current_state, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
+      program.push_back(to_end);
+    }
+
+    return program;
+  }
+
+  void removeScanLink()
+  {
+    if (env_->getSceneGraph()->getLink(SCAN_LINK_NAME))
+      env_->applyCommand(std::make_shared<tesseract_environment::RemoveLinkCommand>(SCAN_LINK_NAME));
+  }
+
+  void addScanLink(const std::string& mesh_filename, const std::string& mesh_frame)
+  {
+    // Add the scan as a collision object to the environment
+    {
+      auto collision_object_type = get<std::string>(node_, COLLISION_OBJECT_TYPE_PARAM);
+      std::vector<tesseract_geometry::Geometry::Ptr> collision_objects;
+      if (collision_object_type == "convex_mesh")
+        collision_objects = scanMeshToConvexMesh(mesh_filename);
+      else if (collision_object_type == "mesh")
+        collision_objects = scanMeshToMesh(mesh_filename);
+      else if (collision_object_type == "octree")
+      {
+        double octree_resolution = get<double>(node_, OCTREE_RESOLUTION_PARAM);
+        if (octree_resolution < std::numeric_limits<double>::epsilon())
+          throw std::runtime_error("Octree resolution must be > 0.0");
+        collision_objects = { scanMeshToOctree(mesh_filename, octree_resolution) };
+      }
+      else if (collision_object_type == "convex_decomposition")
+      {
+        auto max_convex_hulls = static_cast<uint32_t>(get<int>(node_, MAX_CONVEX_HULLS));
+        collision_objects = scanMeshToConvexDecomposition(mesh_filename, max_convex_hulls);
+      }
+      else
+      {
+        std::stringstream ss;
+        ss << "Invalid collision object type (" << collision_object_type
+           << ") for adding scan mesh to planning environment. Supported types are 'convex_mesh', 'mesh', and "
+              "'octree'";
+        throw std::runtime_error(ss.str());
+      }
+
+      tesseract_environment::Commands env_cmds = createScanAdditionCommands(
+          collision_objects, mesh_frame, get<std::vector<std::string>>(node_, SCAN_DISABLED_CONTACT_LINKS));
+
+      env_->applyCommands(env_cmds);
+    }
+  }
+
+  void removeScanLinkCallback(const std_srvs::srv::Empty::Request::SharedPtr, std_srvs::srv::Empty::Response::SharedPtr)
+  {
+    removeScanLink();
+  }
+
+  void addScanLinkCallback(const snp_msgs::srv::AddScanLink::Request::SharedPtr req,
+                           snp_msgs::srv::AddScanLink::Response::SharedPtr res)
+  {
+    try
+    {
+      addScanLink(req->mesh_filename, req->mesh_frame);
+      res->success = true;
+    }
+    catch (const std::exception& ex)
+    {
+      res->message = ex.what();
+      res->success = false;
+    }
+  }
+
+
+  virtual void processMotionPlanCallback(const snp_msgs::srv::GenerateMotionPlan::Request::SharedPtr req,
                                  snp_msgs::srv::GenerateMotionPlan::Response::SharedPtr res)
   {
     try
@@ -708,7 +711,7 @@ private:
 
     RCLCPP_INFO_STREAM(node_->get_logger(), res->message);
   }
-  void freespaceMotionPlanCallback(const snp_msgs::srv::GenerateFreespaceMotionPlan::Request::SharedPtr req,
+  virtual void freespaceMotionPlanCallback(const snp_msgs::srv::GenerateFreespaceMotionPlan::Request::SharedPtr req,
                                    snp_msgs::srv::GenerateFreespaceMotionPlan::Response::SharedPtr res)
   {
     try
@@ -755,7 +758,6 @@ private:
 
   rclcpp::Node::SharedPtr node_;
 
-  tesseract_environment::Environment::Ptr env_;
   tesseract_monitoring::ROSEnvironmentMonitor::Ptr tesseract_monitor_;
   tesseract_rosutils::ROSPlottingPtr plotter_;
   rclcpp::Service<snp_msgs::srv::GenerateMotionPlan>::SharedPtr raster_server_;
