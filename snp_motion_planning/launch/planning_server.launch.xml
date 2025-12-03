@@ -30,7 +30,7 @@
   <arg name="cartesian_tolerance" default="[0.01, 0.01, 0.01, 0.05, 0.05, 6.28]"/>
   <arg name="cartesian_coefficient" default="[2.5, 2.5, 2.5, 2.5, 2.5, 0.0]"/>
 
-  <node pkg="snp_motion_planning" exec="snp_motion_planning_node" output="screen">
+  <node pkg="snp_motion_planning" exec="ndt_motion_planning_node" output="screen">
     <!-- General -->
     <param name="robot_description" type="str" value="$(var robot_description)"/>
     <param name="robot_description_semantic" type="str" value="$(var robot_description_semantic)"/>
