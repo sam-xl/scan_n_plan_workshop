@@ -47,6 +47,8 @@ target_link_libraries(
   tesseract::tesseract_time_parameterization_core
   tesseract::tesseract_environment
   tesseract::tesseract_motion_planners_core
+  trajopt::trajopt_ifopt
+  trajopt::trajopt_sqp
   yaml-cpp)
 
 # Planning server
@@ -67,6 +69,7 @@ target_link_libraries(
   tesseract::tesseract_motion_planners_descartes
   tesseract::tesseract_time_parameterization_isp
   tesseract::tesseract_kinematics_kdl
+  trajopt::trajopt_ifopt
   yaml-cpp)
 
 # Plugin Library
