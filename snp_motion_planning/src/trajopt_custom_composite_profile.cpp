@@ -33,7 +33,7 @@ TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <boost/serialization/shared_ptr.hpp>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
-#include <tesseract_motion_planners/trajopt/profile/trajopt_custom_composite_profile.h>
+#include "trajopt_ifopt_custom_composite_profile.h"
 #include <tesseract_motion_planners/trajopt/trajopt_utils.h>
 #include <tesseract_motion_planners/core/utils.h>
 
@@ -53,7 +53,7 @@ static const double LONGEST_VALID_SEGMENT_FRACTION_DEFAULT = 0.01;
 namespace tesseract_planning
 {
 TrajOptTermInfos
-TrajOptCustomCompositeProfile::create(const tesseract_common::ManipulatorInfo& composite_manip_info,
+TrajOptIfoptCustomCompositeProfile::create(const tesseract_common::ManipulatorInfo& composite_manip_info,
                                        const std::shared_ptr<const tesseract_environment::Environment>& env,
                                        const std::vector<int>& fixed_indices,
                                        int start_index,
@@ -153,7 +153,7 @@ TrajOptCustomCompositeProfile::create(const tesseract_common::ManipulatorInfo& c
   return term_infos;
 }
 
-double TrajOptCustomCompositeProfile::computeLongestValidSegmentLength(const Eigen::MatrixX2d& joint_limits) const
+double TrajOptIfoptCustomCompositeProfile::computeLongestValidSegmentLength(const Eigen::MatrixX2d& joint_limits) const
 {
   // Calculate longest valid segment length
   double extent = (joint_limits.col(1) - joint_limits.col(0)).norm();
@@ -170,7 +170,7 @@ double TrajOptCustomCompositeProfile::computeLongestValidSegmentLength(const Eig
 }
 
 template <class Archive>
-void TrajOptCustomCompositeProfile::serialize(Archive& ar, const unsigned int /*version*/)
+void TrajOptIfoptCustomCompositeProfile::serialize(Archive& ar, const unsigned int /*version*/)
 {
   ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(TrajOptCompositeProfile);
   ar& BOOST_SERIALIZATION_NVP(contact_test_type);
@@ -193,5 +193,5 @@ void TrajOptCustomCompositeProfile::serialize(Archive& ar, const unsigned int /*
 }  // namespace tesseract_planning
 
 #include <tesseract_common/serialization.h>
-TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(tesseract_planning::TrajOptCustomCompositeProfile)
-BOOST_CLASS_EXPORT_IMPLEMENT(tesseract_planning::TrajOptCustomCompositeProfile)
+TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(tesseract_planning::TrajOptIfoptCustomCompositeProfile)
+BOOST_CLASS_EXPORT_IMPLEMENT(tesseract_planning::TrajOptIfoptCustomCompositeProfile)
