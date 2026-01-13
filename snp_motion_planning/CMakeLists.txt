@@ -37,7 +37,8 @@ add_library(
   src/plugins/tasks/kinematic_limits_check_profile.cpp
   src/plugins/tasks/kinematic_limits_check_task.cpp
   src/plugins/tasks/tcp_speed_limiter_profile.cpp
-  src/plugins/tasks/tcp_speed_limiter_task.cpp)
+  src/plugins/tasks/tcp_speed_limiter_task.cpp
+  src/trajopt_custom_composite_profile.cpp)
 target_link_libraries(
   ${PROJECT_NAME}_tasks
   tesseract::tesseract_common
@@ -49,6 +50,7 @@ target_link_libraries(
   tesseract::tesseract_motion_planners_core
   trajopt::trajopt_ifopt
   trajopt::trajopt_sqp
+  trajopt::trajopt 
   yaml-cpp)
 
 # Planning server
@@ -69,6 +71,7 @@ target_link_libraries(
   tesseract::tesseract_motion_planners_descartes
   tesseract::tesseract_time_parameterization_isp
   tesseract::tesseract_kinematics_kdl
+  tesseract::tesseract_motion_planners_trajopt
   trajopt::trajopt_ifopt
   yaml-cpp)
 
