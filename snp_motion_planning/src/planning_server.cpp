@@ -495,8 +495,14 @@ private:
       // TrajOpt
       profile_dict->addProfile(TRAJOPT_DEFAULT_NAMESPACE, PROFILE,
                                createTrajOptToolZFreePlanProfile(cart_tolerance, cart_coeff));
+      // profile_dict->addProfile(TRAJOPT_DEFAULT_NAMESPACE, PROFILE,
+      //                          createTrajOptProfile(min_contact_dist, collision_pairs, longest_valid_segment_length));
+  
+
       profile_dict->addProfile(TRAJOPT_DEFAULT_NAMESPACE, PROFILE,
-                               createTrajOptProfile(min_contact_dist, collision_pairs, longest_valid_segment_length));
+                               createCustomTrajOptProfile(min_contact_dist, collision_pairs, longest_valid_segment_length));
+
+      RCLCPP_INFO(node_->get_logger(), ":::::::::::::::::::::::::::::::::::::::Created custom trajopr profile");
 
       // Descartes
       profile_dict->addProfile(DESCARTES_DEFAULT_NAMESPACE, PROFILE,
