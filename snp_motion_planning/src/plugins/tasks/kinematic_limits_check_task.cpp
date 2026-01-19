@@ -1,4 +1,4 @@
-#include "kinematic_limits_check_profile.h"
+#include "snp_motion_planning/plugins/tasks/kinematic_limits_check_profile.h"
 
 #include <tesseract_task_composer/core/task_composer_plugin_factory_utils.h>
 

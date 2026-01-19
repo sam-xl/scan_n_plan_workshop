@@ -1,4 +1,4 @@
-#include "tcp_speed_limiter_profile.h"
+#include "snp_motion_planning/plugins/tasks/tcp_speed_limiter_profile.h"
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <typeindex>

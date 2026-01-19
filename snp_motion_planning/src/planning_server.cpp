@@ -1,7 +1,7 @@
-#include "planner_profiles.hpp"
-#include "plugins/tasks/constant_tcp_speed_time_parameterization_profile.h"
-#include "plugins/tasks/kinematic_limits_check_profile.h"
-#include "plugins/tasks/tcp_speed_limiter_profile.h"
+#include "snp_motion_planning/planner_profiles.hpp"
+#include "snp_motion_planning/plugins/tasks/constant_tcp_speed_time_parameterization_profile.h"
+#include "snp_motion_planning/plugins/tasks/kinematic_limits_check_profile.h"
+#include "snp_motion_planning/plugins/tasks/tcp_speed_limiter_profile.h"
 
 #include <rclcpp/rclcpp.hpp>
 #include <snp_msgs/srv/generate_motion_plan.hpp>
