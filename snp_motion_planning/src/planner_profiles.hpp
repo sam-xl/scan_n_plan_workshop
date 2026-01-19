@@ -157,9 +157,9 @@ createTrajOptToolZFreePlanProfile(const Eigen::VectorXd& cart_tolerance = Eigen:
   return profile;
 }
 
-std::shared_ptr<tesseract_planning::TrajOptIfoptCustomCompositeProfile>
-createCustomTrajOptProfile(double min_contact_distance, const std::vector<ExplicitCollisionPair>& unique_collision_pairs,
-                     double longest_valid_segment_length)
+std::shared_ptr<tesseract_planning::TrajOptIfoptCustomCompositeProfile> createCustomTrajOptProfile(
+    double min_contact_distance, const std::vector<ExplicitCollisionPair>& unique_collision_pairs,
+    double longest_valid_segment_length)
 {
   // TrajOpt profiles
   auto profile = std::make_shared<tesseract_planning::TrajOptIfoptCustomCompositeProfile>();

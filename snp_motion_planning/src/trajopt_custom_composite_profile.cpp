@@ -54,10 +54,8 @@ namespace tesseract_planning
 {
 TrajOptTermInfos
 TrajOptIfoptCustomCompositeProfile::create(const tesseract_common::ManipulatorInfo& composite_manip_info,
-                                       const std::shared_ptr<const tesseract_environment::Environment>& env,
-                                       const std::vector<int>& fixed_indices,
-                                       int start_index,
-                                       int end_index) const
+                                           const std::shared_ptr<const tesseract_environment::Environment>& env,
+                                           const std::vector<int>& fixed_indices, int start_index, int end_index) const
 {
   // -------- Construct the problem ------------
   // -------------------------------------------
@@ -69,16 +67,11 @@ TrajOptIfoptCustomCompositeProfile::create(const tesseract_common::ManipulatorIn
 
   if (collision_constraint_config.enabled)
   {
-    trajopt::TermInfo::Ptr ti = createCollisionTermInfo(start_index,
-                                                        end_index,
-                                                        collision_constraint_config.safety_margin,
-                                                        collision_constraint_config.safety_margin_buffer,
-                                                        collision_constraint_config.type,
-                                                        collision_constraint_config.use_weighted_sum,
-                                                        collision_constraint_config.coeff,
-                                                        contact_test_type,
-                                                        lvs_length,
-                                                        trajopt::TermType::TT_CNT);
+    trajopt::TermInfo::Ptr ti =
+        createCollisionTermInfo(start_index, end_index, collision_constraint_config.safety_margin,
+                                collision_constraint_config.safety_margin_buffer, collision_constraint_config.type,
+                                collision_constraint_config.use_weighted_sum, collision_constraint_config.coeff,
+                                contact_test_type, lvs_length, trajopt::TermType::TT_CNT);
 
     // Update the term info with the (possibly) new start and end state indices for which to apply this cost
     std::shared_ptr<trajopt::CollisionTermInfo> ct = std::static_pointer_cast<trajopt::CollisionTermInfo>(ti);
@@ -97,16 +90,10 @@ TrajOptIfoptCustomCompositeProfile::create(const tesseract_common::ManipulatorIn
   if (collision_cost_config.enabled)
   {
     // Create a default collision term info
-    trajopt::TermInfo::Ptr ti = createCollisionTermInfo(start_index,
-                                                        end_index,
-                                                        collision_cost_config.safety_margin,
-                                                        collision_cost_config.safety_margin_buffer,
-                                                        collision_cost_config.type,
-                                                        collision_cost_config.use_weighted_sum,
-                                                        collision_cost_config.coeff,
-                                                        contact_test_type,
-                                                        lvs_length,
-                                                        trajopt::TermType::TT_COST);
+    trajopt::TermInfo::Ptr ti = createCollisionTermInfo(
+        start_index, end_index, collision_cost_config.safety_margin, collision_cost_config.safety_margin_buffer,
+        collision_cost_config.type, collision_cost_config.use_weighted_sum, collision_cost_config.coeff,
+        contact_test_type, lvs_length, trajopt::TermType::TT_COST);
 
     // Update the term info with the (possibly) new start and end state indices for which to apply this cost
     std::shared_ptr<trajopt::CollisionTermInfo> ct = std::static_pointer_cast<trajopt::CollisionTermInfo>(ti);
@@ -147,8 +134,8 @@ TrajOptIfoptCustomCompositeProfile::create(const tesseract_common::ManipulatorIn
   }
 
   if (avoid_singularity)
-    term_infos.costs.push_back(createAvoidSingularityTermInfo(
-        start_index, end_index, composite_manip_info.tcp_frame, avoid_singularity_coeff));
+    term_infos.costs.push_back(createAvoidSingularityTermInfo(start_index, end_index, composite_manip_info.tcp_frame,
+                                                              avoid_singularity_coeff));
 
   return term_infos;
 }

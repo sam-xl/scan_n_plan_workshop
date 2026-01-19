@@ -99,9 +99,7 @@ public:
 
   TrajOptTermInfos create(const tesseract_common::ManipulatorInfo& composite_manip_info,
                           const std::shared_ptr<const tesseract_environment::Environment>& env,
-                          const std::vector<int>& fixed_indices,
-                          int start_index,
-                          int end_index) const override;
+                          const std::vector<int>& fixed_indices, int start_index, int end_index) const override;
 
 protected:
   double computeLongestValidSegmentLength(const Eigen::MatrixX2d& joint_limits) const;
