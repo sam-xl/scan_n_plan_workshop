@@ -52,7 +52,7 @@ public:
   tesseract_collision::ContactTestType contact_test_type{ tesseract_collision::ContactTestType::ALL };
   CollisionCostConfig collision_cost_config;
   CollisionConstraintConfig collision_constraint_config;
-  
+
   /**@brief Special link collision cost distances */
   std::shared_ptr<trajopt_common::SafetyMarginData> special_collision_cost{ nullptr };
   /**@brief Special link collision constraint distances */
