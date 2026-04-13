@@ -38,7 +38,7 @@ add_library(
   src/plugins/tasks/kinematic_limits_check_task.cpp
   src/plugins/tasks/tcp_speed_limiter_profile.cpp
   src/plugins/tasks/tcp_speed_limiter_task.cpp
-  src/trajopt_custom_composite_profile.cpp)
+  src/trajopt_ifopt_custom_composite_profile.cpp)
 target_link_libraries(
   ${PROJECT_NAME}_tasks
   tesseract::tesseract_common

@@ -41,7 +41,6 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <tesseract_common/eigen_serialization.h>
 #include <tesseract_collision/core/serialization.h>
 
-
 namespace tesseract_planning
 {
 
