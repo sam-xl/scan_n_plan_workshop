@@ -8,11 +8,10 @@
 #include <tesseract_motion_planners/ompl/ompl_planner_configurator.h>
 #include <tesseract_motion_planners/ompl/profile/ompl_real_vector_plan_profile.h>
 #include <tesseract_motion_planners/trajopt/profile/trajopt_default_plan_profile.h>
-#include <tesseract_motion_planners/trajopt/profile/trajopt_default_composite_profile.h>
-#include "trajopt_ifopt_custom_composite_profile.h"
-
 #include <tesseract_motion_planners/simple/profile/simple_planner_lvs_plan_profile.h>
 #include <tesseract_task_composer/planning/profiles/contact_check_profile.h>
+
+#include "trajopt_ifopt_custom_composite_profile.h"
 
 static const std::string TRAJOPT_DEFAULT_NAMESPACE = "TrajOptMotionPlannerTask";
 static const std::string OMPL_DEFAULT_NAMESPACE = "OMPLMotionPlannerTask";
@@ -240,12 +239,12 @@ std::shared_ptr<tesseract_planning::TrajOptIfoptCustomCompositeProfile> createCu
   return profile;
 }
 
-std::shared_ptr<tesseract_planning::TrajOptDefaultCompositeProfile>
+std::shared_ptr<tesseract_planning::TrajOptIfoptCustomCompositeProfile>
 createTrajOptProfile(double min_contact_distance, const std::vector<ExplicitCollisionPair>& unique_collision_pairs,
                      double longest_valid_segment_length)
 {
   // TrajOpt profiles
-  auto profile = std::make_shared<tesseract_planning::TrajOptDefaultCompositeProfile>();
+  auto profile = std::make_shared<tesseract_planning::TrajOptIfoptCustomCompositeProfile>();
   profile->smooth_velocities = false;
   profile->velocity_coeff = Eigen::VectorXd::Constant(1, 1, 10.0);
   profile->smooth_accelerations = true;
