@@ -49,6 +49,7 @@ target_link_libraries(
   tesseract::tesseract_environment
   tesseract::tesseract_motion_planners_core
   trajopt::trajopt_ifopt
+  tesseract::tesseract_motion_planners_trajopt_ifopt
   trajopt::trajopt_sqp
   trajopt::trajopt 
   yaml-cpp)
@@ -68,6 +69,7 @@ target_link_libraries(
   tesseract::tesseract_motion_planners_simple
   tesseract::tesseract_motion_planners_ompl
   tesseract::tesseract_motion_planners_trajopt
+  tesseract::tesseract_motion_planners_trajopt_ifopt
   tesseract::tesseract_motion_planners_descartes
   tesseract::tesseract_time_parameterization_isp
   tesseract::tesseract_kinematics_kdl
