@@ -49,6 +49,9 @@ class TrajOptIfoptCustomCompositeProfile : public TrajOptIfoptDefaultCompositePr
 public:
   TrajOptIfoptCustomCompositeProfile() = default;
 
+  /* The costs were added from the TrajOptDefaultCompositeProfile. To run the scan_n_plan workshop with
+   the default parameters they have used, these parameters are needed. They can be removed if it is not used.
+  */
   tesseract_collision::ContactTestType contact_test_type{ tesseract_collision::ContactTestType::ALL };
   CollisionCostConfig collision_cost_config;
   CollisionConstraintConfig collision_constraint_config;
