@@ -73,7 +73,6 @@ target_link_libraries(
   tesseract::tesseract_motion_planners_descartes
   tesseract::tesseract_time_parameterization_isp
   tesseract::tesseract_kinematics_kdl
-  tesseract::tesseract_motion_planners_trajopt
   trajopt::trajopt_ifopt
   yaml-cpp)
 
