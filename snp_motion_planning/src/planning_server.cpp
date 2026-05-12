@@ -495,8 +495,12 @@ private:
       // TrajOpt
       profile_dict->addProfile(TRAJOPT_DEFAULT_NAMESPACE, PROFILE,
                                createTrajOptToolZFreePlanProfile(cart_tolerance, cart_coeff));
-      profile_dict->addProfile(TRAJOPT_DEFAULT_NAMESPACE, PROFILE,
-                               createTrajOptProfile(min_contact_dist, collision_pairs, longest_valid_segment_length));
+
+      // This uses the custom TrajOpt profile with IFOPT. The composer plugins should reference the
+      // TRAJOPT_CUSTOM_NAMESPACE to utilize this.
+      profile_dict->addProfile(
+          TRAJOPT_CUSTOM_NAMESPACE, PROFILE,
+          createCustomTrajOptProfile(min_contact_dist, collision_pairs, longest_valid_segment_length));
 
       // Descartes
       profile_dict->addProfile(DESCARTES_DEFAULT_NAMESPACE, PROFILE,
