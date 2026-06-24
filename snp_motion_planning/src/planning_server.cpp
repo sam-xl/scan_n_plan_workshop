@@ -447,7 +447,7 @@ private:
       {
         tesseract_planning::CartesianWaypoint wp = raster_strips[rs][i];
         raster_segment.push_back(
-            tesseract_planning::MoveInstruction(wp, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
+            tesseract_planning::MoveInstruction(wp, tesseract_planning::MoveInstructionType::LINEAR, PROFILE, info));
       }
       program.push_back(raster_segment);
 
