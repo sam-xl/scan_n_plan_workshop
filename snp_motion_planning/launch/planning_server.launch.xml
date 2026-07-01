@@ -4,6 +4,7 @@
   <arg name="robot_description"/>
   <arg name="robot_description_semantic"/>
   <arg name="verbose" default="False"/>
+  <arg name="publish_tf" default="false"/>
   <!-- Add empty string to empty list so parameter exceptions aren't thrown. See https://github.com/ros2/rclcpp/issues/1955 -->
   <arg name="scan_disabled_contact_links" default="['']" description="List of links that should be allowed to collide with the scan (e.g., link to which the scan is attached) "/>
   <arg name="scan_reduced_contact_links" default="['']" description="List of links whose minimum acceptable contact distance to the scan should be set to 0.0 (e.g., the TCP link)"/>
@@ -29,7 +30,6 @@
   <arg name="tcp_max_speed" default="0.25"/>
   <arg name="cartesian_tolerance" default="[0.01, 0.01, 0.01, 0.05, 0.05, 6.28]"/>
   <arg name="cartesian_coefficient" default="[2.5, 2.5, 2.5, 2.5, 2.5, 0.0]"/>
-  <arg name="publish_tf" default="false"/>
 
   <node pkg="snp_motion_planning" exec="snp_motion_planning_node" output="screen">
     <!-- General -->
@@ -61,9 +61,5 @@
     <param name="cartesian_tolerance" value="$(var cartesian_tolerance)"/>
     <param name="cartesian_coefficient" value="$(var cartesian_coefficient)"/>
     <param name="publish_tf" value="$(var publish_tf)"/>
-    
-    <!-- Dynamic TF is handled by the robot_state_publisher. Avoid conflicts
-         by remapping the topic. -->
-    <remap from="/tf" to="/tf_tesseract"/>
   </node>
 </launch>
