@@ -62,6 +62,7 @@ static const std::string SCAN_LINK_NAME = "scan";
 static const std::string SCAN_DISABLED_CONTACT_LINKS = "scan_disabled_contact_links";
 static const std::string SCAN_REDUCED_CONTACT_LINKS_PARAM = "scan_reduced_contact_links";
 static const std::string VERBOSE_PARAM = "verbose";
+static const std::string PUBLISH_TF_PARAM = "publish_tf";
 //   Scan link
 static const std::string COLLISION_OBJECT_TYPE_PARAM = "collision_object_type";
 static const std::string OCTREE_RESOLUTION_PARAM = "octree_resolution";
@@ -258,6 +259,7 @@ public:
     node_->declare_parameter<double>(OCTREE_RESOLUTION_PARAM, 0.010);
     node_->declare_parameter<int>(MAX_CONVEX_HULLS, 64);
     node_->declare_parameter(COLLISION_OBJECT_TYPE_PARAM, "convex_mesh");
+    node_->declare_parameter(PUBLISH_TF_PARAM, false);
 
     // Profiles
     node_->declare_parameter(MAX_TRANS_VEL_PARAM, 0.05);
@@ -296,7 +298,7 @@ public:
     tesseract_monitor_ =
         std::make_shared<tesseract_monitoring::ROSEnvironmentMonitor>(node_, env_, TESSERACT_MONITOR_NAMESPACE);
     tesseract_monitor_->setEnvironmentPublishingFrequency(30.0);
-    tesseract_monitor_->startPublishingEnvironment();
+    tesseract_monitor_->startPublishingEnvironment(get<bool>(node_, PUBLISH_TF_PARAM));
     tesseract_monitor_->startStateMonitor(tesseract_monitoring::DEFAULT_JOINT_STATES_TOPIC, false);
 
     // Advertise the ROS2 service

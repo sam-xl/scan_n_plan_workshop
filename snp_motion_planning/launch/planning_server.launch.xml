@@ -4,6 +4,7 @@
   <arg name="robot_description"/>
   <arg name="robot_description_semantic"/>
   <arg name="verbose" default="False"/>
+  <arg name="publish_tf" default="false"/>
   <!-- Add empty string to empty list so parameter exceptions aren't thrown. See https://github.com/ros2/rclcpp/issues/1955 -->
   <arg name="scan_disabled_contact_links" default="['']" description="List of links that should be allowed to collide with the scan (e.g., link to which the scan is attached) "/>
   <arg name="scan_reduced_contact_links" default="['']" description="List of links whose minimum acceptable contact distance to the scan should be set to 0.0 (e.g., the TCP link)"/>
@@ -59,5 +60,6 @@
     <param name="tcp_max_speed" value = "$(var tcp_max_speed)"/>
     <param name="cartesian_tolerance" value="$(var cartesian_tolerance)"/>
     <param name="cartesian_coefficient" value="$(var cartesian_coefficient)"/>
+    <param name="publish_tf" value="$(var publish_tf)"/>
   </node>
 </launch>
