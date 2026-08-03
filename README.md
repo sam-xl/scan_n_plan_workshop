@@ -44,3 +44,24 @@ Several complete Scan 'N Plan applications based on this repository can be found
 - [Automate 2022](https://github.com/ros-industrial-consortium/snp_automate_2022)
 - [Automate 2023](https://github.com/ros-industrial-consortium/snp_automate_2023)
 - [Robotic Blending Milestone 5](https://github.com/ros-industrial-consortium/snp_blending)
+
+## SAM XL Modifications/Additions
+
+### Motion planning service for contact motions
+
+Served on `/generate_contact_motion_plan` by default.
+
+Type: [`snp_msgs/srv/GenerateContactMotionPlan`](snp_msgs/srv/GenerateContactMotionPlan.srv)
+
+Planning with this service returns a motion plan similar to `/generate_motion_plan`, but with the following modifications:
+
+- Does not move back to the initial position at the end of the motion
+- Adds a waypoint to the approach segment "above the surface". The offset must be specified in `pre_contact_offset` (in tool frame)
+- Adds a waypoint to the departure segment "above the surface". The offset must be specified in `post_contact_offset` ( in tool frame)
+- Allows for planning from any state by specifying `from_state`. If empty, plans from current state.
+
+The service still returns 3 segments: `approach`, `process` and `departure`.
+
+### Publishing environment is optional
+
+Environment updates can be published over `/tf` by setting the `publish_tf` parameter to `true` (`false` by default).

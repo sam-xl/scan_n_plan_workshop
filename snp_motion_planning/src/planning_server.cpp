@@ -5,6 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <snp_msgs/srv/generate_motion_plan.hpp>
+#include <snp_msgs/srv/generate_contact_motion_plan.hpp>
 #include <snp_msgs/srv/generate_freespace_motion_plan.hpp>
 #include <snp_msgs/srv/add_scan_link.hpp>
 #include <std_srvs/srv/empty.hpp>
@@ -61,6 +62,7 @@ static const std::string SCAN_LINK_NAME = "scan";
 static const std::string SCAN_DISABLED_CONTACT_LINKS = "scan_disabled_contact_links";
 static const std::string SCAN_REDUCED_CONTACT_LINKS_PARAM = "scan_reduced_contact_links";
 static const std::string VERBOSE_PARAM = "verbose";
+static const std::string PUBLISH_TF_PARAM = "publish_tf";
 //   Scan link
 static const std::string COLLISION_OBJECT_TYPE_PARAM = "collision_object_type";
 static const std::string OCTREE_RESOLUTION_PARAM = "octree_resolution";
@@ -68,6 +70,7 @@ static const std::string MAX_CONVEX_HULLS = "max_convex_hulls";
 //   Task composer
 static const std::string TASK_COMPOSER_CONFIG_FILE_PARAM = "task_composer_config_file";
 static const std::string RASTER_TASK_NAME_PARAM = "raster_task_name";
+static const std::string CONTACT_TASK_NAME_PARAM = "contact_task_name";
 static const std::string FREESPACE_TASK_NAME_PARAM = "freespace_task_name";
 
 //   Profile
@@ -90,6 +93,7 @@ static const std::string TESSERACT_MONITOR_NAMESPACE = "snp_environment";
 
 // Services
 static const std::string PLANNING_SERVICE = "generate_motion_plan";
+static const std::string CONTACT_PLANNING_SERVICE = "generate_contact_motion_plan";
 static const std::string FREESPACE_PLANNING_SERVICE = "generate_freespace_motion_plan";
 static const std::string REMOVE_SCAN_LINK_SERVICE = "remove_scan_link";
 static const std::string ADD_SCAN_LINK_SERVICE = "add_scan_link";
@@ -255,6 +259,7 @@ public:
     node_->declare_parameter<double>(OCTREE_RESOLUTION_PARAM, 0.010);
     node_->declare_parameter<int>(MAX_CONVEX_HULLS, 64);
     node_->declare_parameter(COLLISION_OBJECT_TYPE_PARAM, "convex_mesh");
+    node_->declare_parameter(PUBLISH_TF_PARAM, false);
 
     // Profiles
     node_->declare_parameter(MAX_TRANS_VEL_PARAM, 0.05);
@@ -275,6 +280,7 @@ public:
     // Task composer
     node_->declare_parameter(TASK_COMPOSER_CONFIG_FILE_PARAM, "");
     node_->declare_parameter(RASTER_TASK_NAME_PARAM, "");
+    node_->declare_parameter(CONTACT_TASK_NAME_PARAM, "SNPPipeline");
     node_->declare_parameter(FREESPACE_TASK_NAME_PARAM, "");
 
     {
@@ -292,13 +298,16 @@ public:
     tesseract_monitor_ =
         std::make_shared<tesseract_monitoring::ROSEnvironmentMonitor>(node_, env_, TESSERACT_MONITOR_NAMESPACE);
     tesseract_monitor_->setEnvironmentPublishingFrequency(30.0);
-    tesseract_monitor_->startPublishingEnvironment();
+    tesseract_monitor_->startPublishingEnvironment(get<bool>(node_, PUBLISH_TF_PARAM));
     tesseract_monitor_->startStateMonitor(tesseract_monitoring::DEFAULT_JOINT_STATES_TOPIC, false);
 
     // Advertise the ROS2 service
     raster_server_ = node_->create_service<snp_msgs::srv::GenerateMotionPlan>(
         PLANNING_SERVICE,
         std::bind(&PlanningServer::processMotionPlanCallback, this, std::placeholders::_1, std::placeholders::_2));
+    contact_server_ = node_->create_service<snp_msgs::srv::GenerateContactMotionPlan>(
+        CONTACT_PLANNING_SERVICE, std::bind(&PlanningServer::processContactMotionPlanCallback, this,
+                                            std::placeholders::_1, std::placeholders::_2));
     freespace_server_ = node_->create_service<snp_msgs::srv::GenerateFreespaceMotionPlan>(
         FREESPACE_PLANNING_SERVICE,
         std::bind(&PlanningServer::freespaceMotionPlanCallback, this, std::placeholders::_1, std::placeholders::_2));
@@ -380,6 +389,99 @@ private:
       to_end.push_back(tesseract_planning::MoveInstruction(
           current_state, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
       program.push_back(to_end);
+    }
+
+    return program;
+  }
+
+  tesseract_planning::CompositeInstruction
+  createContactProgram(const tesseract_common::ManipulatorInfo& info, const tesseract_common::Toolpath& raster_strips,
+                       const Eigen::Isometry3d& offset_pre_contact, const Eigen::Isometry3d& offset_post_contact,
+                       std::optional<tesseract_planning::JointWaypoint> start_state)
+  {
+    std::vector<std::string> joint_names = env_->getJointGroup(info.manipulator)->getJointNames();
+
+    tesseract_planning::CompositeInstruction program(PROFILE, info);
+
+    // Offset the first and last waypoints
+    const auto first_waypoint = raster_strips.front().front();
+    const auto pre_contact_waypoint = first_waypoint * offset_pre_contact;
+    const auto last_waypoint = raster_strips.back().back();
+    const auto post_contact_waypoint = last_waypoint * offset_post_contact;
+
+    // Define the start state from the current if no override is set
+    if (!start_state)
+    {
+      start_state = tesseract_planning::JointWaypoint{ joint_names, env_->getCurrentJointValues(joint_names) };
+    }
+
+    // Add a freespace move from the current state to pre-contact waypoint
+    {
+      tesseract_planning::CompositeInstruction approach(PROFILE);
+      approach.setDescription("approach");
+
+      // Add the initial state waypoint
+      approach.push_back(tesseract_planning::MoveInstruction(
+          *start_state, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
+
+      // Define the target pre-contact waypoint
+      tesseract_planning::CartesianWaypoint wp1 = pre_contact_waypoint;
+      approach.push_back(
+          tesseract_planning::MoveInstruction(wp1, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info));
+
+      // Add a linear move from the pre-contact waypoint to the first waypoint
+      tesseract_planning::CartesianWaypoint wp2 = first_waypoint;
+      approach.push_back(
+          tesseract_planning::MoveInstruction(wp2, tesseract_planning::MoveInstructionType::LINEAR, PROFILE, info));
+
+      // Add the composite to the program
+      program.push_back(approach);
+    }
+
+    // Add the process raster motions
+    for (std::size_t rs = 0; rs < raster_strips.size(); ++rs)
+    {
+      // Add raster
+      tesseract_planning::CompositeInstruction raster_segment(PROFILE);
+      raster_segment.setDescription("Raster Index " + std::to_string(rs));
+
+      for (std::size_t i = 1; i < raster_strips[rs].size(); ++i)
+      {
+        tesseract_planning::CartesianWaypoint wp = raster_strips[rs][i];
+        raster_segment.push_back(
+            tesseract_planning::MoveInstruction(wp, tesseract_planning::MoveInstructionType::LINEAR, PROFILE, info));
+      }
+      program.push_back(raster_segment);
+
+      // Add transition
+      if (rs < raster_strips.size() - 1)
+      {
+        tesseract_planning::CartesianWaypoint twp = raster_strips[rs + 1].front();
+
+        tesseract_planning::MoveInstruction transition_instruction1(
+            twp, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, info);
+        transition_instruction1.setDescription("Transition #" + std::to_string(rs + 1));
+
+        tesseract_planning::CompositeInstruction transition(PROFILE);
+        transition.setDescription("Transition #" + std::to_string(rs + 1));
+        transition.push_back(transition_instruction1);
+
+        program.push_back(transition);
+      }
+    }
+
+    // Add a move to the post-contact waypoint. Does not move back to initial
+    {
+      tesseract_planning::CompositeInstruction departure(PROFILE);
+      departure.setDescription("departure");
+
+      // Add a linear move from the last waypoint to the post-contact waypoint
+      // Define the target first waypoint
+      tesseract_planning::CartesianWaypoint wp1 = post_contact_waypoint;
+      departure.push_back(
+          tesseract_planning::MoveInstruction(wp1, tesseract_planning::MoveInstructionType::LINEAR, PROFILE, info));
+
+      program.push_back(departure);
     }
 
     return program;
@@ -712,6 +814,94 @@ private:
 
     RCLCPP_INFO_STREAM(node_->get_logger(), res->message);
   }
+
+  void processContactMotionPlanCallback(const snp_msgs::srv::GenerateContactMotionPlan::Request::SharedPtr req,
+                                        snp_msgs::srv::GenerateContactMotionPlan::Response::SharedPtr res)
+  {
+    try
+    {
+      RCLCPP_INFO_STREAM(node_->get_logger(), "Received motion planning request");
+
+      // Create a manipulator info and program from the service request
+      const std::string& base_frame = req->tool_paths.at(0).segments.at(0).header.frame_id;
+      if (base_frame.empty())
+      {
+        throw std::runtime_error("Base frame is empty!");
+      }
+      if (req->motion_group.empty())
+      {
+        throw std::runtime_error("Motion group is empty!");
+      }
+      if (req->tcp_frame.empty())
+      {
+        throw std::runtime_error("TCP frame is empty!");
+      }
+      tesseract_common::ManipulatorInfo manip_info(req->motion_group, base_frame, req->tcp_frame);
+
+      // Set up composite instruction and environment
+      Eigen::Isometry3d pre_contact_offset;
+      tf2::fromMsg(req->pre_contact_offset, pre_contact_offset);
+      Eigen::Isometry3d post_contact_offset;
+      tf2::fromMsg(req->post_contact_offset, post_contact_offset);
+
+      std::optional<tesseract_planning::JointWaypoint> start_state;
+      if (req->from_state.name.size() > 0)
+      {
+        start_state = rosJointStateToJointWaypoint(req->from_state);
+      }
+
+      tesseract_planning::CompositeInstruction program = createContactProgram(
+          manip_info, fromMsg(req->tool_paths), pre_contact_offset, post_contact_offset, start_state);
+
+      // Invoke the planner
+      auto pd = createProfileDictionary();
+      auto task_name = get<std::string>(node_, CONTACT_TASK_NAME_PARAM);
+      tesseract_planning::CompositeInstruction program_results = plan(program, pd, task_name);
+
+      if (program_results.size() < 3)
+      {
+        std::stringstream ss;
+        ss << "The composite instruction must have at least 3 children (approach, process rasters"
+              " and departure). This result only has "
+           << program_results.size();
+        throw std::runtime_error(ss.str());
+      }
+
+      // Return results
+      res->approach = tesseract_rosutils::toMsg(toJointTrajectory(program_results.at(0)), env_->getState());
+
+      tesseract_planning::CompositeInstruction process_ci(program_results.begin() + 1, program_results.end() - 1);
+      res->process = tesseract_rosutils::toMsg(toJointTrajectory(process_ci), env_->getState());
+
+      res->departure = tesseract_rosutils::toMsg(toJointTrajectory(program_results.at(program_results.size() - 1)),
+                                                 env_->getState());
+
+      // Add the end of the make_contact trajectory to the beginning of the process trajectory
+      {
+        trajectory_msgs::msg::JointTrajectoryPoint make_contact_end = res->approach.points.back();
+        make_contact_end.time_from_start = builtin_interfaces::msg::Duration();
+        res->process.points.insert(res->process.points.begin(), make_contact_end);
+      }
+
+      // Add the end of the break_contact trajectory to the beginning of the departure trajectory
+      {
+        trajectory_msgs::msg::JointTrajectoryPoint break_contact_end = res->process.points.back();
+        break_contact_end.time_from_start = builtin_interfaces::msg::Duration();
+        res->departure.points.insert(res->departure.points.begin(), break_contact_end);
+      }
+
+      res->message = "Succesfully planned motion";
+      res->success = true;
+    }
+    catch (const std::exception& ex)
+    {
+      res->message = ex.what();
+      res->success = false;
+    }
+
+    RCLCPP_INFO_STREAM(node_->get_logger(), res->message);
+  }
+
   void freespaceMotionPlanCallback(const snp_msgs::srv::GenerateFreespaceMotionPlan::Request::SharedPtr req,
                                    snp_msgs::srv::GenerateFreespaceMotionPlan::Response::SharedPtr res)
   {
@@ -773,6 +963,7 @@ private:
   tesseract_monitoring::ROSEnvironmentMonitor::Ptr tesseract_monitor_;
   tesseract_rosutils::ROSPlottingPtr plotter_;
   rclcpp::Service<snp_msgs::srv::GenerateMotionPlan>::SharedPtr raster_server_;
+  rclcpp::Service<snp_msgs::srv::GenerateContactMotionPlan>::SharedPtr contact_server_;
   rclcpp::Service<snp_msgs::srv::GenerateFreespaceMotionPlan>::SharedPtr freespace_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr remove_scan_link_server_;
   rclcpp::Service<snp_msgs::srv::AddScanLink>::SharedPtr add_scan_link_server_;
