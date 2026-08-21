@@ -31,6 +31,7 @@ rosidl_generate_interfaces(
   "srv/GenerateToolPaths.srv"
   "srv/GenerateScanMotionPlan.srv"
   "srv/GenerateFreespaceMotionPlan.srv"
+  "srv/GenerateFreespaceMotionPlanCartesian.srv"
   DEPENDENCIES
   geometry_msgs
   trajectory_msgs

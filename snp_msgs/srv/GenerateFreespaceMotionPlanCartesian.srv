@@ -1,0 +1,17 @@
+# Request
+
+# Params
+string motion_group
+string tcp_frame
+sensor_msgs/JointState initial_joint_state
+geometry_msgs/PoseStamped target_pose
+
+---
+# Response
+
+# Motion Plan - a joint trajectory for the robot to follow
+trajectory_msgs/JointTrajectory trajectory
+
+# Success and error information
+bool success
+string message

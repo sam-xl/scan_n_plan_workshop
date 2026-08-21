@@ -7,6 +7,7 @@
 #include <snp_msgs/srv/generate_motion_plan.hpp>
 #include <snp_msgs/srv/generate_contact_motion_plan.hpp>
 #include <snp_msgs/srv/generate_freespace_motion_plan.hpp>
+#include <snp_msgs/srv/generate_freespace_motion_plan_cartesian.hpp>
 #include <snp_msgs/srv/add_scan_link.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <tesseract_collision/bullet/convex_hull_utils.h>
@@ -95,6 +96,7 @@ static const std::string TESSERACT_MONITOR_NAMESPACE = "snp_environment";
 static const std::string PLANNING_SERVICE = "generate_motion_plan";
 static const std::string CONTACT_PLANNING_SERVICE = "generate_contact_motion_plan";
 static const std::string FREESPACE_PLANNING_SERVICE = "generate_freespace_motion_plan";
+static const std::string FREESPACE_CARTESIAN_PLANNING_SERVICE = "generate_freespace_motion_plan_cartesian";
 static const std::string REMOVE_SCAN_LINK_SERVICE = "remove_scan_link";
 static const std::string ADD_SCAN_LINK_SERVICE = "add_scan_link";
 
@@ -311,6 +313,9 @@ public:
     freespace_server_ = node_->create_service<snp_msgs::srv::GenerateFreespaceMotionPlan>(
         FREESPACE_PLANNING_SERVICE,
         std::bind(&PlanningServer::freespaceMotionPlanCallback, this, std::placeholders::_1, std::placeholders::_2));
+    freespace_cartesian_server_ = node_->create_service<snp_msgs::srv::GenerateFreespaceMotionPlanCartesian>(
+        FREESPACE_CARTESIAN_PLANNING_SERVICE, std::bind(&PlanningServer::freespaceMotionPlanCartesianCallback, this,
+                                                        std::placeholders::_1, std::placeholders::_2));
     remove_scan_link_server_ = node_->create_service<std_srvs::srv::Empty>(
         REMOVE_SCAN_LINK_SERVICE,
         std::bind(&PlanningServer::removeScanLinkCallback, this, std::placeholders::_1, std::placeholders::_2));
@@ -902,6 +907,65 @@ private:
     RCLCPP_INFO_STREAM(node_->get_logger(), res->message);
   }
 
+  void freespaceMotionPlanCartesianCallback(
+      const snp_msgs::srv::GenerateFreespaceMotionPlanCartesian::Request::SharedPtr req,
+      snp_msgs::srv::GenerateFreespaceMotionPlanCartesian::Response::SharedPtr res)
+  {
+    try
+    {
+      RCLCPP_INFO_STREAM(node_->get_logger(), "Received freespace motion planning request");
+
+      tesseract_common::ManipulatorInfo manip_info;
+      manip_info.manipulator = req->motion_group;
+      manip_info.tcp_frame = req->tcp_frame;
+      manip_info.working_frame = req->target_pose.header.frame_id;
+
+      tesseract_planning::CompositeInstruction freespace_program(PROFILE, manip_info);
+
+      tesseract_planning::JointWaypoint wp1;
+      if (req->initial_joint_state.name.size() > 0)
+      {
+        // If we got a starting joint states message
+        wp1 = rosJointStateToJointWaypoint(req->initial_joint_state);
+      }
+      else
+      {
+        // Otherwise plan from the current state
+        const std::vector<std::string> joint_names = env_->getJointGroup(manip_info.manipulator)->getJointNames();
+        wp1 = tesseract_planning::JointWaypoint{ joint_names, env_->getCurrentJointValues(joint_names) };
+      }
+
+      Eigen::Isometry3d target_pose;
+      tf2::fromMsg(req->target_pose.pose, target_pose);
+      tesseract_planning::CartesianWaypoint wp2 = target_pose;
+
+      // Define a freespace move to the first waypoint
+      freespace_program.push_back(tesseract_planning::MoveInstruction(
+          wp1, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, manip_info));
+
+      // Define a freespace move to the second waypoint
+      freespace_program.push_back(tesseract_planning::MoveInstruction(
+          wp2, tesseract_planning::MoveInstructionType::FREESPACE, PROFILE, manip_info));
+
+      // Invoke the planner
+      auto pd = createProfileDictionary();
+      auto freespace_task_name = get<std::string>(node_, FREESPACE_TASK_NAME_PARAM);
+      tesseract_planning::CompositeInstruction program_results = plan(freespace_program, pd, freespace_task_name);
+
+      // Return results
+      res->trajectory = tesseract_rosutils::toMsg(toJointTrajectory(program_results), env_->getState());
+      res->message = "Succesfully planned motion";
+      res->success = true;
+    }
+    catch (const std::exception& ex)
+    {
+      res->message = ex.what();
+      res->success = false;
+    }
+
+    RCLCPP_INFO_STREAM(node_->get_logger(), res->message);
+  }
+
   void freespaceMotionPlanCallback(const snp_msgs::srv::GenerateFreespaceMotionPlan::Request::SharedPtr req,
                                    snp_msgs::srv::GenerateFreespaceMotionPlan::Response::SharedPtr res)
   {
@@ -965,6 +1029,7 @@ private:
   rclcpp::Service<snp_msgs::srv::GenerateMotionPlan>::SharedPtr raster_server_;
   rclcpp::Service<snp_msgs::srv::GenerateContactMotionPlan>::SharedPtr contact_server_;
   rclcpp::Service<snp_msgs::srv::GenerateFreespaceMotionPlan>::SharedPtr freespace_server_;
+  rclcpp::Service<snp_msgs::srv::GenerateFreespaceMotionPlanCartesian>::SharedPtr freespace_cartesian_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr remove_scan_link_server_;
   rclcpp::Service<snp_msgs::srv::AddScanLink>::SharedPtr add_scan_link_server_;
 };
