@@ -22,36 +22,37 @@ foreach(dep ${ROS2_DEPS})
 endforeach()
 
 find_package(descartes_light REQUIRED)
-find_package(tesseract_command_language REQUIRED)
-find_package(tesseract_collision REQUIRED COMPONENTS vhacd)
-find_package(tesseract_task_composer REQUIRED)
-find_package(tesseract_kinematics REQUIRED)
+find_package(
+  tesseract_planning REQUIRED
+  COMPONENTS command_language
+             task_composer
+             motion_planners
+             time_parameterization)
+find_package(
+  tesseract REQUIRED
+  COMPONENTS kinematics
+             collision_vhacd
+             kinematics_kdl
+             kinematics_ikfast)
 find_package(LAPACK REQUIRED) # Requried for ikfast
 find_package(yaml-cpp REQUIRED)
 
 # Libraries
-add_library(
-  ${PROJECT_NAME}_tasks SHARED
-  src/plugins/tasks/constant_tcp_speed_time_parameterization_profile.cpp
-  src/plugins/tasks/constant_tcp_speed_time_parameterization_task.cpp
-  src/plugins/tasks/kinematic_limits_check_profile.cpp
-  src/plugins/tasks/kinematic_limits_check_task.cpp
-  src/plugins/tasks/tcp_speed_limiter_profile.cpp
-  src/plugins/tasks/tcp_speed_limiter_task.cpp
-  src/trajopt_ifopt_custom_composite_profile.cpp)
+add_library(${PROJECT_NAME}_tasks SHARED src/plugins/tasks/tcp_speed_limiter_profile.cpp
+                                         src/plugins/tasks/tcp_speed_limiter_task.cpp)
 target_link_libraries(
   ${PROJECT_NAME}_tasks
-  tesseract::tesseract_common
-  tesseract::tesseract_command_language
-  tesseract::tesseract_task_composer
-  tesseract::tesseract_kinematics_kdl
-  tesseract::tesseract_time_parameterization_core
-  tesseract::tesseract_environment
-  tesseract::tesseract_motion_planners_core
+  tesseract::common
+  tesseract::command_language
+  tesseract::task_composer
+  tesseract::kinematics_kdl
+  tesseract::time_parameterization
+  tesseract::environment
+  tesseract::motion_planners
   trajopt::trajopt_ifopt
-  tesseract::tesseract_motion_planners_trajopt_ifopt
+  tesseract::motion_planners_trajopt_ifopt
   trajopt::trajopt_sqp
-  trajopt::trajopt 
+  trajopt::trajopt
   yaml-cpp)
 
 # Planning server
@@ -60,26 +61,25 @@ ament_target_dependencies(${PROJECT_NAME}_node ${ROS2_DEPS})
 target_link_libraries(
   ${PROJECT_NAME}_node
   ${PROJECT_NAME}_tasks
-  tesseract::tesseract_common
-  tesseract::tesseract_collision_vhacd_convex_decomposition
-  tesseract::tesseract_command_language
-  tesseract::tesseract_task_composer
-  tesseract::tesseract_task_composer_planning_nodes
-  tesseract::tesseract_motion_planners_core
-  tesseract::tesseract_motion_planners_simple
-  tesseract::tesseract_motion_planners_ompl
-  tesseract::tesseract_motion_planners_trajopt
-  tesseract::tesseract_motion_planners_trajopt_ifopt
-  tesseract::tesseract_motion_planners_descartes
-  tesseract::tesseract_time_parameterization_isp
-  tesseract::tesseract_kinematics_kdl
+  tesseract::common
+  tesseract::collision_vhacd_convex_decomposition
+  tesseract::command_language
+  tesseract::task_composer
+  tesseract::task_composer_planning_nodes
+  tesseract::motion_planners
+  tesseract::motion_planners_simple
+  tesseract::motion_planners_ompl
+  tesseract::motion_planners_trajopt
+  tesseract::motion_planners_trajopt_ifopt
+  tesseract::motion_planners_descartes
+  tesseract::time_parameterization_isp
+  tesseract::kinematics_kdl
   trajopt::trajopt_ifopt
   yaml-cpp)
 
 # Plugin Library
 add_library(${PROJECT_NAME}_plugins SHARED src/plugins/kinematics/motoman_hc10_ikfast_plugin.cpp)
-target_link_libraries(${PROJECT_NAME}_plugins PUBLIC ${LAPACK_LIBRARIES} tesseract::tesseract_common
-                                                     tesseract::tesseract_kinematics_ikfast)
+target_link_libraries(${PROJECT_NAME}_plugins PUBLIC ${LAPACK_LIBRARIES} tesseract::common tesseract::kinematics_ikfast)
 target_include_directories(${PROJECT_NAME}_plugins SYSTEM PUBLIC ${LAPACK_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 
 # Install the executable(s)
