@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - master
+      - main
   pull_request:
     paths:
       - 'snp**'
       - '.github/workflows/ubuntu.yml'
       - 'dependencies.repos'
-  schedule:
-    - cron: '0 5 * * *'
+  # schedule:
+  #   - cron: '0 5 * * *'
   workflow_dispatch:
   release:
     types:
