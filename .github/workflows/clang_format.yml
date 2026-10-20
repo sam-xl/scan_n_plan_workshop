@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - master
+      - main
   pull_request:
     paths:
       - 'snp**'
       - '.github/workflows/clang_format.yml'
       - '**clang-format'
-  schedule:
-    - cron: '0 5 * * *'
+  # schedule:
+  #   - cron: '0 5 * * *'
 
 jobs:
   clang_format:
