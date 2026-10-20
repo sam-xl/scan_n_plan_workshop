@@ -24,9 +24,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [foxy, humble, rolling]
+        distro: [humble, jazzy]
     container:
-      image: ghcr.io/tesseract-robotics/tesseract_ros2:${{ matrix.distro }}-0.29
+      image: ghcr.io/tesseract-robotics/tesseract_ros2:${{ matrix.distro }}-0.35
       env:
         CCACHE_DIR: ${{ github.workspace }}/${{ matrix.distro }}/.ccache
         DEBIAN_FRONTEND: noninteractive
