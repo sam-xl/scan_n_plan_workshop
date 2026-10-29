@@ -13,12 +13,9 @@
   <depend>rclcpp</depend>
   <depend>snp_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>tesseract_command_language</depend>
-  <depend>tesseract_task_composer</depend>
+  <depend>tesseract_planning</depend>
+  <depend>tesseract</depend>
   <depend>tesseract_monitoring</depend>
-  <depend>tesseract_support</depend>
-  <depend>tesseract_urdf</depend>
-  <depend>tesseract_kinematics</depend>
   <depend>tf2_eigen</depend>
 
   <export>

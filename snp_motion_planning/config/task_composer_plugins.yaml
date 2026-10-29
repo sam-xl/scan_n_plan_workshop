@@ -44,12 +44,14 @@ task_composer_plugins:
         config:
           threads: 8
   tasks:
-    plugins:    
+    plugins:
       SNPCartesianPipeline:
         class: GraphTaskFactory
         config:
           inputs:
             program: input_program
+            environment: environment
+            profiles: profiles
           outputs:
             program: output_program
           nodes:
@@ -75,8 +77,8 @@ task_composer_plugins:
                   program: trajopt_output
                   environment: environment
                   profiles: profiles
-            ConstantTCPSpeedTimeParameterizationTask:
-              class: ConstantTCPSpeedTimeParameterizationTaskFactory
+            ConstantTCPSpeedParameterizationTask:
+              class: ConstantTCPSpeedParameterizationTaskFactory
               config:
                 conditional: true
                 inputs:
@@ -92,8 +94,8 @@ task_composer_plugins:
             - source: TrajOptMotionPlannerTask
               destinations: [ErrorTask, DiscreteContactCheckTask]
             - source: DiscreteContactCheckTask
-              destinations: [ErrorTask, ConstantTCPSpeedTimeParameterizationTask]
-            - source: ConstantTCPSpeedTimeParameterizationTask
+              destinations: [ErrorTask, ConstantTCPSpeedParameterizationTask]
+            - source: ConstantTCPSpeedParameterizationTask
               destinations: [ErrorTask, KinematicLimitsCheckTask]
             - source: KinematicLimitsCheckTask
               destinations: [ErrorTask, DoneTask]
@@ -103,6 +105,8 @@ task_composer_plugins:
         config:
           inputs:
             program: input_program
+            environment: environment
+            profiles: profiles
           outputs:
             program: output_program
           nodes:
@@ -239,6 +243,8 @@ task_composer_plugins:
         config:
           inputs:
             program: input_program
+            environment: environment
+            profiles: profiles
           outputs:
             program: output_program
           nodes:
@@ -282,36 +288,21 @@ task_composer_plugins:
                 inputs:
                   program: descartes_output
                   environment: environment
+                  profiles: profiles
                 outputs:
                   program: raster_output
                 freespace:
                   task: SNPFreespacePipeline
                   config:
-                    indexing:
-                      - input_program
-                      - min_length_output
-                      - trajopt_output
-                      - ompl_output
-                      - trajopt_ompl_output
-                      - output_program
+                    abort_terminal: 0
                 raster:
                   task: SNPCartesianPipeline
                   config:
-                    indexing:
-                      - input_program
-                      - min_length_output
-                      - trajopt_output
-                      - output_program
+                    abort_terminal: 0
                 transition:
                   task: SNPFreespacePipeline
                   config:
-                    indexing:
-                      - input_program
-                      - min_length_output
-                      - trajopt_output
-                      - ompl_output
-                      - trajopt_ompl_output
-                      - output_program
+                    abort_terminal: 0
             TCPSpeedLimiterTask:
               class: TCPSpeedLimiterTaskFactory
               config:

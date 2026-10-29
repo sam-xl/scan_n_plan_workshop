@@ -18,13 +18,13 @@
 ///     gcc -lstdc++ ik.cpp
 /// To compile without any main function as a shared object (might need -llapack):
 ///     gcc -fPIC -lstdc++ -DIKFAST_NO_MAIN -DIKFAST_CLIBRARY -shared -Wl,-soname,libik.so -o libik.so ik.cpp
-#include <tesseract_common/macros.h>
+#include <tesseract/common/macros.h>
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #ifndef IKFAST_HAS_LIBRARY
 #define IKFAST_HAS_LIBRARY
 #define IKFAST_NO_MAIN
 #endif
-#include <tesseract_kinematics/ikfast/external/ikfast.h>  // found inside share/openrave-X.Y/python/ikfast.h
+#include <tesseract/kinematics/ikfast/external/ikfast.h>  // found inside share/openrave-X.Y/python/ikfast.h
 using namespace ikfast;
 
 // check if the included ikfast version matches what this file was compiled with

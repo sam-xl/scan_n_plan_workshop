@@ -1,19 +1,19 @@
 #pragma once
 
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_kinematics/core/utils.h>
-#include <tesseract_time_parameterization/core/trajectory_container.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_state_solver/state_solver.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/kinematics/utils.h>
+#include <tesseract/time_parameterization/instructions_trajectory.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/state_solver/state_solver.h>
 
 namespace snp_motion_planning
 {
-void limitTCPSpeed(tesseract_environment::Environment::ConstPtr env,
-                   tesseract_planning::TrajectoryContainer& trajectory, const std::string& joint_group,
-                   const std::string& tcp_frame, const double max_speed)
+inline void limitTCPSpeed(tesseract::environment::Environment::ConstPtr env,
+                          tesseract::time_parameterization::InstructionsTrajectory& trajectory,
+                          const std::string& joint_group, const std::string& tcp_frame, const double max_speed)
 {
   // Extract objects needed for calculating FK
-  tesseract_scene_graph::StateSolver::UPtr state_solver = env->getStateSolver();
+  tesseract::scene_graph::StateSolver::UPtr state_solver = env->getStateSolver();
   std::vector<std::string> joint_names = env->getJointGroup(joint_group)->getJointNames();
 
   // Find the adjacent waypoints that require the biggest speed reduction to stay under the max tcp speed
@@ -21,11 +21,11 @@ void limitTCPSpeed(tesseract_environment::Environment::ConstPtr env,
   for (Eigen::Index i = 1; i < trajectory.size(); i++)
   {
     // Find the previous waypoint position in Cartesian space
-    tesseract_scene_graph::SceneState prev_ss = state_solver->getState(joint_names, trajectory.getPosition(i - 1));
+    tesseract::scene_graph::SceneState prev_ss = state_solver->getState(joint_names, trajectory.getPosition(i - 1));
     Eigen::Isometry3d prev_pose = prev_ss.link_transforms[tcp_frame];
 
     // Find the current waypoint position in Cartesian space
-    tesseract_scene_graph::SceneState curr_ss = state_solver->getState(joint_names, trajectory.getPosition(i));
+    tesseract::scene_graph::SceneState curr_ss = state_solver->getState(joint_names, trajectory.getPosition(i));
     Eigen::Isometry3d curr_pose = curr_ss.link_transforms[tcp_frame];
 
     // Calculate the average TCP velocity between these waypoints
