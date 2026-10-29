@@ -51,7 +51,7 @@ target_link_libraries(
   trajopt::trajopt_ifopt
   tesseract::tesseract_motion_planners_trajopt_ifopt
   trajopt::trajopt_sqp
-  trajopt::trajopt 
+  trajopt::trajopt
   yaml-cpp)
 
 # Planning server
