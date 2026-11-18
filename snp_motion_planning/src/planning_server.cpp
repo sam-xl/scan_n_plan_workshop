@@ -679,7 +679,10 @@ private:
     }
 
     auto task_data = std::make_shared<tesseract_planning::TaskComposerDataStorage>();
-    task_data->setData("input_program", program);
+    // Note: this is necessary to ensure that the joint states are ordered correctly
+    auto formatted_program = program;
+    tesseract_planning::formatProgram(formatted_program, *env_);
+    task_data->setData("input_program", formatted_program);
     task_data->setData("environment", std::shared_ptr<const tesseract_environment::Environment>(env_));
     task_data->setData("profiles", profile_dict);
 
@@ -703,7 +706,7 @@ private:
     }
 
     // Run problem
-    tesseract_planning::TaskComposerLog log(program.getDescription());
+    tesseract_planning::TaskComposerLog log(formatted_program.getDescription());
     log.initial_data = *task_data;
     tesseract_planning::TaskComposerFuture::UPtr result = executor->run(*task, task_data, true);
     result->wait();
